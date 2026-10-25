@@ -22,7 +22,7 @@ Bấm **Fetch origin**, nếu nút đổi thành **Pull origin** thì bấm ti�
 1. Vào https://github.com/thuyetvm-pixel/KV-configip-printer-app → tab **Actions**.
 2. Bấm vào lần chạy **Build APK** mới nhất có dấu ✓ xanh (mỗi lần build mất khoảng 15 phút).
 3. Kéo xuống mục **Artifacts**, bấm **printer-scanner-apk-…** để tải về (file .zip).
-4. Giải nén → được `app-release.apk`. Chép sang điện thoại Android và mở để cài
+4. Giải nén → được `printer-scanner-v….apk` (kèm 2 file kiểm tra chữ ký). Chép file `.apk` sang điện thoại Android và mở để cài
    (cho phép “Cài ứng dụng không rõ nguồn gốc” nếu điện thoại hỏi).
 
 Muốn build lại mà không sửa code: tab **Actions → Build APK → Run workflow → Run workflow**.
@@ -30,4 +30,6 @@ Muốn build lại mà không sửa code: tab **Actions → Build APK → Run wo
 ## Khi gặp lỗi
 - **Push bị từ chối / yêu cầu đăng nhập**: kiểm tra lại bước A.1.
 - **Build APK có dấu ✗ đỏ**: bấm vào lần chạy đó, chụp màn hình phần chữ đỏ và gửi cho người hỗ trợ.
-- APK ký bằng khóa thử nghiệm: dùng cài nội bộ, không đưa lên Google Play.
+- APK được ký bằng khóa riêng của bạn (xem SECURITY.md). File có chữ `TESTKEY` là bản thử, không phát cho kỹ thuật viên.
+- Nếu điện thoại báo “Ứng dụng chưa được cài đặt” khi cập nhật: gỡ app cũ (bản ký khóa thử nghiệm) rồi cài lại.
+- **Sao lưu thư mục `D:\KV-keystore`** – mất khóa thì không phát hành được bản cập nhật.

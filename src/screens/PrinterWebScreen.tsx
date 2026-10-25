@@ -3,6 +3,7 @@ import { ActivityIndicator, Linking, Modal, Pressable, StyleSheet, Text, View } 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Button } from '../components/Button';
+import { isAllowedAdminNavigation } from '../services/printer/webPolicy';
 import { colors, mono, spacing } from '../theme';
 
 type Props = {
@@ -10,13 +11,17 @@ type Props = {
   onClose: () => void;
 };
 
-/** Embedded browser for the printer's web admin (plain HTTP is allowed via usesCleartextTraffic). */
+/**
+ * Embedded browser for the printer's web admin. Plain HTTP is allowed app-wide (usesCleartextTraffic)
+ * because printers serve their admin page over http://<IP>; navigation is locked to that one host.
+ */
 export function PrinterWebScreen({ url, onClose }: Props) {
   const insets = useSafeAreaInsets();
   // WebView<P = undefined> resolves its props to `never` with recent TypeScript; pass an empty P.
   const webRef = useRef<WebView<object>>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState<string | null>(null);
 
   if (!url) return null;
 
@@ -60,11 +65,31 @@ export function PrinterWebScreen({ url, onClose }: Props) {
             onLoadEnd={() => setLoading(false)}
             onError={(e) => setError(`${e.nativeEvent.description} (mã ${e.nativeEvent.code})`)}
             onHttpError={(e) => setError(`HTTP ${e.nativeEvent.statusCode}`)}
-            mixedContentMode="always"
+            // Only the printer's own pages: no other hosts, no file:/intent:/javascript: URLs.
+            originWhitelist={['http://*', 'https://*']}
+            onShouldStartLoadWithRequest={(req) => {
+              const allowed = isAllowedAdminNavigation(req.url, url);
+              if (!allowed) setBlocked(req.url);
+              return allowed;
+            }}
+            // Nothing from the session (login cookies, cache) outlives this screen.
+            incognito
+            cacheEnabled={false}
+            thirdPartyCookiesEnabled={false}
+            allowFileAccess={false}
+            allowFileAccessFromFileURLs={false}
+            allowUniversalAccessFromFileURLs={false}
+            javaScriptCanOpenWindowsAutomatically={false}
             setSupportMultipleWindows={false}
-            originWhitelist={['*']}
+            mixedContentMode="never"
+            saveFormDataDisabled
           />
         )}
+        {blocked ? (
+          <Text style={styles.blocked} numberOfLines={2}>
+            Đã chặn mở {blocked} – ứng dụng chỉ hiển thị trang của máy in.
+          </Text>
+        ) : null}
         {loading && !error ? <ActivityIndicator style={styles.spinner} size="large" color={colors.primary} /> : null}
       </View>
     </Modal>
@@ -88,4 +113,5 @@ const styles = StyleSheet.create({
   error: { padding: spacing.xl, gap: spacing.md },
   errorTitle: { fontSize: 17, fontWeight: '800', color: colors.red },
   errorText: { color: colors.text, fontSize: 14, lineHeight: 20 },
+  blocked: { backgroundColor: colors.yellowBg, color: colors.yellow, padding: spacing.md, fontSize: 13 },
 });

@@ -1,11 +1,19 @@
 # Builds the Printer Scanner APK on every push / pull request and on demand.
 # The APK is attached to the run as an artifact (Actions tab → run → "Artifacts").
+#
+# Signing: when the repository secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+# ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD exist (never on fork PRs), the APK is signed with the
+# project's release key. Otherwise it is signed with the public debug key and named "...-TESTKEY".
 name: Build APK
 
 on:
   push:
   pull_request:
   workflow_dispatch:
+
+# Least privilege for the workflow token.
+permissions:
+  contents: read
 
 concurrency:
   group: build-apk-${{ github.ref }}
@@ -15,9 +23,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      # Strictly increasing so every new APK installs over the previous one.
+      ANDROID_VERSION_CODE: ${{ 1000 + github.run_number }}
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v5
         with:
@@ -41,6 +54,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Dependency vulnerability audit (runtime packages)
+        # Reported, not blocking: fixes often need an Expo SDK upgrade.
+        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Unit tests
         run: npm test -- --ci
 
@@ -50,16 +68,51 @@ jobs:
       - name: Generate Android project
         run: npx expo prebuild -p android --clean --no-install
 
+      - name: Restore release keystore
+        id: keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "suffix=" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No release keystore secret: APK is signed with the public DEBUG key (test only)."
+            echo "suffix=-TESTKEY" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build release APK
         working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --no-daemon
+
+      - name: Verify APK signature
+        run: |
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk | tee apk-signature.txt
+          if [ -n "${ANDROID_KEYSTORE_PATH:-}" ] && grep -q "CN=Android Debug" apk-signature.txt; then
+            echo "::error::Release key configured but APK is debug-signed."; exit 1
+          fi
+          cp android/app/build/outputs/apk/release/app-release.apk "printer-scanner-v${ANDROID_VERSION_CODE}${{ steps.keystore.outputs.suffix }}.apk"
+          sha256sum printer-scanner-*.apk | tee apk-sha256.txt
+
+      - name: Remove keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: printer-scanner-apk-${{ github.run_number }}
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: printer-scanner-apk-${{ github.run_number }}${{ steps.keystore.outputs.suffix }}
+          path: |
+            printer-scanner-*.apk
+            apk-sha256.txt
+            apk-signature.txt
           if-no-files-found: error
           retention-days: 30

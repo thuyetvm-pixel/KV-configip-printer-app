@@ -32,7 +32,8 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "allowBackup": false
     },
     "plugins": [
       [
@@ -43,7 +44,8 @@
           }
         }
       ],
-      "./plugins/withCmakeVersion"
+      "./plugins/withCmakeVersion",
+      "./plugins/withReleaseSigning"
     ],
     "web": {
       "favicon": "./assets/favicon.png"

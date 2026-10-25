@@ -7,6 +7,8 @@
 MỞ APP → QUÉT MẠNG → NHẬN DIỆN MÁY IN → CHỌN MÁY IN → GỢI Ý IP MỚI → KIỂM TRA TRÙNG IP → HỖ TRỢ ĐỔI IP
 ```
 
+Bảo mật, chứng chỉ ký APK và cách quản lý khóa: xem [SECURITY.md](SECURITY.md).
+
 ## 1. Kiến trúc và lý do chọn
 
 | Lựa chọn | Lý do |
@@ -140,7 +142,7 @@ cd android
 
 | APK | Đường dẫn | Dùng khi |
 | --- | --- | --- |
-| Release (~37 MB) | `android/app/build/outputs/apk/release/app-release.apk` | **Cài cho kỹ thuật viên**: chạy độc lập (JS đã đóng gói Hermes). Ký bằng debug keystore → chỉ dùng nội bộ, không phát hành Play Store. |
+| Release (~37 MB) | `android/app/build/outputs/apk/release/app-release.apk` | **Cài cho kỹ thuật viên**: chạy độc lập (JS đã đóng gói Hermes). Ký bằng khóa riêng khi có biến môi trường `ANDROID_KEYSTORE_*` (xem SECURITY.md), nếu không thì khóa debug (chỉ để thử). |
 | Debug (~75 MB) | `android/app/build/outputs/apk/debug/app-debug.apk` | Phát triển: cần Metro (`npx expo start --dev-client`) + `adb reverse tcp:8081 tcp:8081`. |
 
 Bản build gần nhất được chép vào `apk/` (đã gitignore).
@@ -169,4 +171,4 @@ Hoặc chép file APK sang điện thoại và mở (bật “Cài ứng dụng 
 ## 6. Việc có thể làm tiếp
 - Bảng OID SNMP đã kiểm chứng theo hãng/dòng máy để không phải nhập tay.
 - Giao thức dò riêng của từng hãng (ví dụ máy in hoá đơn nhiệt không có mDNS/SNMP).
-- Ký release bằng keystore riêng và build qua EAS/CI.
+- Phát hành lên Google Play (dùng khóa hiện tại làm upload key, bật Play App Signing).
