@@ -82,7 +82,7 @@ jobs:
             echo "suffix=-TESTKEY" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Build release APK
         working-directory: android
