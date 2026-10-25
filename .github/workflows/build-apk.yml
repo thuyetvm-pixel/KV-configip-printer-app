@@ -23,14 +23,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    env:
-      # Strictly increasing so every new APK installs over the previous one.
-      ANDROID_VERSION_CODE: ${{ 1000 + github.run_number }}
 
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+
+      # Strictly increasing so every new APK installs over the previous one.
+      - name: Set versionCode
+        run: echo "ANDROID_VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
 
       - uses: actions/setup-node@v5
         with:
