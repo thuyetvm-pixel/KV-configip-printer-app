@@ -46,7 +46,8 @@ ký bằng khóa debug công khai – chỉ để thử, không phát cho kỹ t
 - GitHub Actions chạy với quyền tối thiểu (`contents: read`), không lưu token git sau checkout.
 - Keystore chỉ được giải mã vào thư mục tạm của máy build và bị xoá cuối job; secret không có trên PR từ fork.
 - `npm ci` theo `package-lock.json` (phiên bản cố định); `npm audit` chạy mỗi lần build.
-- Dependabot mở PR cập nhật hàng tuần cho GitHub Actions và thư viện npm.
+- Dependabot: thư viện npm **chỉ** nhận PR vá lỗ hổng bảo mật (Dependabot alerts + security updates đã bật); GitHub Actions
+  nhận 1 PR gộp mỗi tháng. Không gộp PR khi build APK của PR đó chưa có dấu ✓.
 - `npm audit` hiện báo 5 lỗi mức *high* trong `@expo/cli` (node-forge, zod). Đây là công cụ build chạy trên máy tính, **không
   nằm trong APK**; bản sửa sẽ đến khi nâng Expo SDK.
 - `.gitignore` chặn đưa lên kho: keystore (`*.jks`, `*.keystore`), `.env`, `local.properties`, APK/AAB.
