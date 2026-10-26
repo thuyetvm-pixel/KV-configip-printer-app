@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -33,12 +33,12 @@ jobs:
       - name: Set versionCode
         run: echo "ANDROID_VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17
@@ -83,7 +83,7 @@ jobs:
             echo "suffix=-TESTKEY" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Build release APK
         working-directory: android
@@ -108,7 +108,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/release.jks"
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: printer-scanner-apk-${{ github.run_number }}${{ steps.keystore.outputs.suffix }}
           path: |
